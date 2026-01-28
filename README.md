@@ -1,6 +1,6 @@
 # MixConfig: Mixing Configurations for Downstream Prediction
 
-Official implementation for the ICML 2026 paper "Mixing Configurations for Downstream Prediction".
+Official implementation for the paper "Mixing Configurations for Downstream Prediction".
 
 ## Abstract
 
