@@ -1,11 +1,11 @@
 """
-Drafted by Juntang Wang at Mar 5th 4 the GASNN project
-
-This file contains utility functions for the project.
+Utility functions for MixConfig experiments and utilities.
 """
+import json
 import platform
 import sys
-from typing import Tuple
+from pathlib import Path
+from typing import Tuple, Optional, Dict, Any
 import numpy as np
 import torch
 import pytorch_lightning as pl
@@ -113,4 +113,77 @@ def train_val_split(train_set, val_ratio=0.2, seed=42) -> Tuple[Dataset, Dataset
         train_set, [train_set_size, val_set_size], generator=seed
     )
     return train_set, val_set
+
+
+def ensure_dir(path: str) -> Path:
+    """
+    Ensure a directory exists and return its Path.
+    """
+    path_obj = Path(path)
+    path_obj.mkdir(parents=True, exist_ok=True)
+    return path_obj
+
+
+def save_json(path: str, payload: Dict[str, Any]) -> None:
+    """
+    Save a dictionary as formatted JSON.
+    """
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, sort_keys=True)
+
+
+def expand_energy_stats(
+    energy_stats: Dict[str, np.ndarray],
+    n_samples: int,
+    device: Optional[torch.device] = None,
+) -> torch.Tensor:
+    """
+    Expand config-level energy stats to per-sample tensor.
+
+    Returns a tensor of shape [n_samples, n_configs, 4].
+    """
+    stats = np.stack(
+        [
+            energy_stats["entropy"],
+            energy_stats["attractive"],
+            energy_stats["repulsive"],
+            energy_stats["energy_gap"],
+        ],
+        axis=-1,
+    )
+    stats_t = torch.tensor(stats, dtype=torch.float32, device=device)
+    return stats_t.unsqueeze(0).repeat(n_samples, 1, 1)
+
+
+def one_hot_configs(
+    configs: np.ndarray,
+    max_clusters: Optional[int] = None,
+) -> np.ndarray:
+    """
+    One-hot encode configuration assignments and concatenate per config.
+    """
+    n_samples, n_configs = configs.shape
+    outputs = []
+    for i in range(n_configs):
+        cfg = configs[:, i].astype(int)
+        n_clusters = max_clusters or (cfg.max() + 1)
+        n_clusters = max(2, int(n_clusters))
+        one_hot = np.zeros((n_samples, n_clusters), dtype=np.float32)
+        one_hot[np.arange(n_samples), cfg] = 1.0
+        outputs.append(one_hot)
+    return np.concatenate(outputs, axis=1)
+
+
+def get_run_dir(base_dir: str, run_name: Optional[str] = None) -> Path:
+    """
+    Create a run directory under base_dir.
+    """
+    base = ensure_dir(base_dir)
+    if run_name is None:
+        run_name = "run"
+    run_dir = base / run_name
+    run_dir.mkdir(parents=True, exist_ok=True)
+    return run_dir
 

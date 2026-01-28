@@ -1,0 +1,41 @@
+# Default configuration for MixConfig experiments
+
+# Seed for reproducibility
+seed: 42
+
+# MixConfig parameters
+mixconfig:
+  n_configs: 8
+  n_neighbors: 15
+  max_clusters: 256
+  context_dim: 64
+  cluster_embed_dim: 32
+  hidden_dims: [256, 128]
+  dropout: 0.1
+  temperature: 1.0
+
+# Predictor parameters
+predictor:
+  type: "mlp"  # mlp, xgboost, rf, linear
+  hidden_dims: [256, 128, 64]
+  dropout: 0.1
+
+# Training parameters
+training:
+  batch_size: 64
+  max_epochs: 100
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  early_stopping_patience: 10
+
+# Evaluation
+evaluation:
+  metrics:
+    classification: ["accuracy", "rocauc", "f1"]
+    regression: ["mse", "mae", "r2"]
+
+# Logging
+logging:
+  log_dir: "./logs"
+  save_checkpoints: true
+  checkpoint_dir: "./checkpoints"

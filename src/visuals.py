@@ -345,3 +345,41 @@ class CustomVisualizer():
             pd.DataFrame(self.sorted_attn).to_csv(save_to, index=False)
 
         return ax
+
+
+def plot_lowdata_curve(df: pd.DataFrame, x_col: str, y_col: str, hue_col: str, ax=None):
+    """
+    Plot low-data performance curves.
+    """
+    if ax is None:
+        _, ax = plt.subplots()
+    sns.lineplot(data=df, x=x_col, y=y_col, hue=hue_col, marker="o", ax=ax)
+    ax.set_xlabel(x_col)
+    ax.set_ylabel(y_col)
+    ax.grid(True, alpha=0.4)
+    return ax
+
+
+def plot_ablation_bars(df: pd.DataFrame, x_col: str, y_col: str, ax=None):
+    """
+    Plot ablation results as a bar chart.
+    """
+    if ax is None:
+        _, ax = plt.subplots()
+    sns.barplot(data=df, x=x_col, y=y_col, ax=ax)
+    ax.set_xlabel(x_col)
+    ax.set_ylabel(y_col)
+    ax.grid(True, axis="y", alpha=0.4)
+    return ax
+
+
+def plot_weight_heatmap(weights: np.ndarray, ax=None):
+    """
+    Plot a heatmap of configuration weights.
+    """
+    if ax is None:
+        _, ax = plt.subplots()
+    sns.heatmap(weights, cmap="viridis", cbar=True, ax=ax)
+    ax.set_xlabel("Configuration")
+    ax.set_ylabel("Sample")
+    return ax

@@ -1,0 +1,23 @@
+# Vision dataset configuration (CIFAR-100, ImageNet-1K)
+
+dataset:
+  name: "cifar100"  # or "imagenet1k"
+  data_dir: "./data"
+  feature_extractor: "resnet50"
+
+# Vision-specific MixConfig settings
+mixconfig:
+  n_configs: 12
+  n_neighbors: 30
+  context_dim: 128
+  cluster_embed_dim: 64
+
+# Predictor settings for vision tasks
+predictor:
+  type: "mlp"
+  hidden_dims: [512, 256, 128]
+
+training:
+  batch_size: 128
+  max_epochs: 50
+  learning_rate: 0.0005

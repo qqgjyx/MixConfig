@@ -1,87 +1,141 @@
-<!-- Drafted by Juntang Wang at 2025-03-01 -->
+# MixConfig: Mixing Configurations for Downstream Prediction
 
-# Mixing Configurations for Downstream Prediction
+Official implementation for the ICML 2026 paper "Mixing Configurations for Downstream Prediction".
 
-This repository contains the code for the paper "Mixing Configurations for Downstream Prediction".
+## Abstract
 
-<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
+We propose MixConfig, a framework for learning sample-specific mixtures of graph-based configurations to improve downstream prediction tasks. Given a dataset, MixConfig extracts multiple configurations via k-NN graph construction and Parallel-DT decomposition, then learns to adaptively weight these configurations for each sample using an Energy-Aware Selector. The selector leverages sample context, cluster assignment embeddings, and energy statistics to produce optimal configuration weights, yielding a mixed representation that captures multi-scale structural information. We demonstrate state-of-the-art performance across tabular, vision, molecular, and text benchmarks.
 
-## Overview
+## Method Overview
 
-This project implements GraMixC (GMC) for various datasets including DSNI, MNIST, Boston House, and QM9.
+MixConfig consists of two main components:
+
+1. **Configuration Extraction**: Given input data X, we construct a k-NN graph and apply Parallel-DT to obtain multiple configurations (cluster assignments) at different resolutions. The Parallel-DT extraction code is not included in this release; a Python implementation will be provided later.
+
+2. **Energy-Aware Selector**: For each sample x, the selector computes:
+   - Sample context: h = MLP_enc(x)
+   - Cluster embeddings: c_i = Embed_i(omega_i(x))
+   - Energy statistics: e_i = [H_i, h_a^(i), h_r^(i), delta_gamma_i]
+   - Compatibility scores: s_i = MLP_score([h; c_i; e_i])
+   - Configuration weights: w_i(x) = softmax(s_i)
+   - Mixed representation: z(x) = sum_i w_i(x) * c_i
 
 ## Installation
 
-1. Clone the repository:
+```bash
+# Clone the repository
+git clone https://github.com/anonymous/mixconfig.git
+cd mixconfig
 
-   ```bash
-   git clone https://github.com/yourusername/ml4dsmz.git
-   cd ml4dsmz
-   ```
-2. Create and activate a conda environment:
+# Create conda environment
+conda env create -f environment.yml
+conda activate mixconfig
+```
 
-   ```bash
-   conda env create -f environment.yml --name ml
-   conda activate ml
-   ```
+## Quick Start
+
+```python
+from src.mixconfig import EnergyAwareSelector
+import numpy as np
+import torch
+
+# Initialize the Energy-Aware Selector
+selector = EnergyAwareSelector(
+    input_dim=X_train.shape[1],
+    n_configs=8,
+    context_dim=64,
+    cluster_embed_dim=32
+)
+
+# Load external configuration assignments and energy statistics
+# configs: [n_samples, n_configs] integer assignments
+# energy_stats: [n_configs, 4] with [H, h_a, h_r, delta_gamma]
+configs = np.load("configs.npy")
+energy_stats = np.load("energy_stats.npy")
+energy_stats_t = torch.tensor(energy_stats, dtype=torch.float32)
+
+# Use mixed representations for downstream prediction
+z = selector.get_mixed_representation(X_train, configs, energy_stats_t)
+```
+
+## Reproducing Paper Results
+
+Note: configuration extraction is not included in this release. To reproduce MixConfig variants, you must supply extracted configurations and energy statistics. Base and +Config baselines can be run without the extractor.
+
+### Tabular (OpenML-CC18)
+
+```bash
+python experiments/run_tabular.py --dataset openml-cc18 --config configs/datasets/tabular.yaml --mode base
+```
+
+### Vision (CIFAR-100, ImageNet-1K)
+
+```bash
+python experiments/run_vision.py --dataset cifar100 --config configs/datasets/vision.yaml --mode base
+python experiments/run_vision.py --dataset imagenet1k --config configs/datasets/vision.yaml --mode base
+```
+
+### Molecular (MolHIV, BBBP, BACE)
+
+```bash
+python experiments/run_molecular.py --dataset molhiv --config configs/datasets/molecular.yaml --mode base
+python experiments/run_molecular.py --dataset bbbp --config configs/datasets/molecular.yaml --mode base
+python experiments/run_molecular.py --dataset bace --config configs/datasets/molecular.yaml --mode base
+```
+
+### Text (SST-2, AG News)
+
+```bash
+python experiments/run_text.py --dataset sst2 --config configs/datasets/text.yaml --mode base
+python experiments/run_text.py --dataset ag_news --config configs/datasets/text.yaml --mode base
+```
+
+### Low-data and ablation scripts
+
+```bash
+python experiments/run_lowdata.py --dataset bbbp --mode base
+python experiments/run_ablation.py --dataset bbbp --ablation full
+```
 
 ## Project Structure
 
-```bash
-ml4dsmz/
-├── data/                         # Dataset storage
-├── documents/overleaf_ml4dsmz_manuscript/
-├── notebooks/
-│   ├── 000.main_DSNI-pH.ipynb    # DSNI-pH dataset implementation
-│   ├── 000.main_DSNI-Temp.ipynb  # DSNI-Temp dataset implementation
-│   ├── 001.main_MNIST.ipynb      # MNIST dataset implementation
-│   ├── 002.main_BHouse.ipynb     # BHouse dataset implementation
-│   ├── 003.main_CIFAR10.ipynb    # CIFAR10 dataset implementation
-│   ├── 004.main_QM9.ipynb        # QM9 dataset implementation
-├── out/                          # Output storage
-├── scripts/                      # Scripts
-├── src/                          # Source code
-│   ├── neighbours/
-│   ├── models.py
-│   ├── utils.py
-│   ├── visuals.py
-├── environment.yml               # Conda environment
-├── main.ipynb                    # EDA notebook
-├── README.md                     # This file
-├── LICENSE
+```
+mixconfig/
+├── src/
+│   ├── mixconfig/           # Core MixConfig implementation
+│   │   ├── selector.py      # Energy-Aware Selector
+│   │   ├── encoder.py       # Sample context encoder
+│   │   ├── embedder.py      # Cluster assignment embedder
+│   │   ├── energy.py        # Energy statistics computation
+│   │   └── config_extractor.py  # Configuration extraction
+│   ├── datasets/            # Dataset loaders
+│   │   ├── tabular.py       # OpenML-CC18
+│   │   ├── vision.py        # CIFAR-100, ImageNet-1K
+│   │   ├── molecular.py     # MolHIV, BBBP, BACE
+│   │   └── text.py          # SST-2, AG News
+│   ├── predictors/          # Downstream predictors
+│   │   ├── neural.py        # MLP, TabPFN, FT-Transformer
+│   │   └── classical.py     # XGBoost, RF, Linear
+│   ├── models.py            # Model definitions
+│   ├── utils.py             # Utility functions
+│   └── visuals.py           # Visualization utilities
+├── experiments/             # Experiment scripts
+│   ├── configs/             # Configuration files
+│   ├── run_ablation.py
+│   ├── run_lowdata.py
+│   ├── run_tabular.py
+│   ├── run_vision.py
+│   ├── run_molecular.py
+│   └── run_text.py
+├── environment.yml          # Conda environment
+└── README.md
 ```
 
-## Usage
+## Notes on availability
 
-The project contains several Jupyter notebooks demonstrating the implementation on different datasets:
-
-0. **DSNI Dataset** (`000.main_DSMZ-pH.ipynb`):
-1. **MNIST Dataset** (`001.main_MNIST.ipynb`):
-2. **Boston Housing Dataset** (`002.main_BHouse.ipynb`):
-3. **CIFAR-10 Dataset** (`003.main_CIFAR10.ipynb`):
-4. **QM9 Dataset** (`004.main_QM9.ipynb`):
-5. **Synthetic Point Cloud Demo** (`100.demo_syn-pointcloud.ipynb`):
-6. **Attention Map Demo** (`101.demo_attn-map.ipynb`):
-7. **Tabnets Supplimentary** (`200.demo_tabnet.ipynb`):
-
-## Features
-
-- Graph-based unsupervised learning
-- Support for multiple datasets (DSNI, MNIST, Boston House, QM9)
-- RNA structure analysis capabilities
-- Comprehensive data preprocessing pipelines
-- Model evaluation metrics including ARI (Adjusted Rand Index)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+- Configuration extraction (Parallel-DT) is not included in this release; a Python implementation will be provided later.
+- The paper includes QM9 results; QM9 pipelines will be released alongside the extractor.
 
 ## License
 
-[Add your license information here]
-
-## Citation
-
-If you use this code in your research, please cite our paper:
-
-[Add citation information here]
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

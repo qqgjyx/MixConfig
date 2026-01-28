@@ -297,7 +297,7 @@ class LitBase(pl.LightningModule):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass through the network."""
-        return self.forward(x)
+        raise NotImplementedError("LitBase.forward must be implemented by subclasses.")
 
     def score(self, y: torch.Tensor, y_pred: torch.Tensor) -> float:
         """Score the model."""

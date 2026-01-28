@@ -1,0 +1,27 @@
+# Molecular dataset configuration (MolHIV, QM9, BBBP, BACE)
+
+dataset:
+  name: "molhiv"  # or "qm9", "bbbp", "bace"
+  data_dir: "./data"
+  feature_type: "fingerprint"
+  fingerprint:
+    type: "morgan"
+    n_bits: 2048
+    radius: 2
+
+# Molecular-specific MixConfig settings
+mixconfig:
+  n_configs: 10
+  n_neighbors: 20
+  context_dim: 64
+  cluster_embed_dim: 32
+
+# Predictor settings for molecular tasks
+predictor:
+  type: "mlp"
+  hidden_dims: [256, 128, 64]
+
+training:
+  batch_size: 64
+  max_epochs: 100
+  learning_rate: 0.001

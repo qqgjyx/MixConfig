@@ -1,0 +1,22 @@
+# Tabular dataset configuration (OpenML-CC18)
+
+dataset:
+  name: "openml-cc18"
+  test_size: 0.2
+  val_size: 0.1
+  normalize: true
+
+# Tabular-specific MixConfig settings
+mixconfig:
+  n_configs: 8
+  n_neighbors: 15
+
+# Predictor settings for tabular data
+predictor:
+  type: "mlp"
+  hidden_dims: [256, 128, 64]
+
+training:
+  batch_size: 64
+  max_epochs: 100
+  learning_rate: 0.001

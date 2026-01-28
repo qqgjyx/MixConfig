@@ -1,0 +1,24 @@
+# Text dataset configuration (SST-2, AG News)
+
+dataset:
+  name: "sst2"  # or "ag_news"
+  model_name: "bert-base-uncased"
+  max_length: 128
+  pooling: "cls"
+
+# Text-specific MixConfig settings
+mixconfig:
+  n_configs: 8
+  n_neighbors: 15
+  context_dim: 128
+  cluster_embed_dim: 64
+
+# Predictor settings for text tasks
+predictor:
+  type: "mlp"
+  hidden_dims: [384, 192, 96]
+
+training:
+  batch_size: 32
+  max_epochs: 30
+  learning_rate: 0.0001
